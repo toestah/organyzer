@@ -1,0 +1,40 @@
+<head>
+    <title>Create Model Instance</title>
+    <%- include('bootstrap.ejs') %>
+</head>
+
+<body>
+    <%- include('navbar.ejs') %>
+        <div class="container">
+            <div class="row">
+
+                <body>
+                    <h1>Create a Model Instance</h1>
+                    <br>
+                    Selected Model: <%= record.properties["Model"] %>
+                        <br>
+                        <hr>
+                        <form method="POST" action="/createinstance">
+                            <input type="hidden" name="Model" value="<%=record.properties['Model']%>" />
+                            <table width="30%">
+                                <tbody>
+                                    <% for ([key,val] of Object.entries(record.properties)) { %>
+                                        <% if (key !='Model' ){ %>
+                                            <tr>
+                                                <td>
+                                                    <%= key %>
+                                                </td>
+                                                <td>
+                                                    <%- '<' + elementMap[val][0] + ' type="' + elementMap[val][1]
+                                                        + '" name="' + key + '">' %>
+                                                </td>
+                                            </tr>
+                                            <% }} %>
+                                </tbody>
+                            </table>
+                            <input type="submit" value="Submit" />
+                        </form>
+            </div>
+        </div>
+        <%- include('scripts.ejs') %>
+</body>

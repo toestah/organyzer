@@ -1,0 +1,37 @@
+<head>
+<title>Neo4j test</title>
+
+</head>
+<body>
+    <h1>Let's see</h1>
+
+
+    <h2>Run a Query!</h2>
+    <p>Run a query below to test the query builder</p>
+
+    <form method="POST" action="/rawdata">
+        Query String: <input type="text" name="query" />
+        <br>
+        <input type="submit" value="Submit"/>
+
+    </form>
+
+    <h2>Current Queried Data</h2>
+    <ul>
+        <% if(typeof records != "undefined"){ %>
+            <% records.forEach(function(record){ %>
+        
+                <li>
+                    Label: <%= record._fields[0].labels[0] %> &nbsp &nbsp
+                        <% for (key in record._fields[0].properties){ %>
+                            <br>
+                            <%=key%>:&nbsp<%= record._fields[0].properties[key] %>
+                                    <% } %>
+                </li>
+            <% }) %>
+       <% } %>
+
+    </ul>
+    
+</body>
+
