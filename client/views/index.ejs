@@ -1,0 +1,45 @@
+<head>
+    <title>Create Model Instance</title>
+    <%- include('bootstrap.ejs') %>
+</head>
+
+<body>
+    <%- include('navbar.ejs') %>
+        <div class="container">
+            <div class="row">
+                <h1>Organyzer</h1>
+            </div>
+            <div class="row">
+                <h2>Run a Query:</h2>
+                <p>Run a query below to test the query builder</p>
+            </div>
+            <div class="row">
+                <div class="col-xs-6">
+                    <br>
+                    <form method="POST" action="/">
+                        Query String: <input class = "form-control" type="text" name="query" />
+                        <br> <br>
+                        <input type="submit" value="Submit" width="100%" />
+                    </form>
+                </div>
+
+            </div>
+            <div class="row">
+                <h2>Current Queried Data</h2>
+                <ul>
+                    <% if(typeof records !="undefined" ){ %>
+                        <% records.forEach(function(record){ %>
+                            <li>
+                                Label: <%= record._fields[0].labels[0] %> &nbsp &nbsp
+                                    <% for (key in record._fields[0].properties){ %>
+                                        <br>
+                                        <%=key%>:&nbsp<%= record._fields[0].properties[key] %>
+                                                <% } %>
+                            </li>
+                            <% }) %>
+                                <% } %>
+                </ul>
+            </div>
+        </div>
+        <%- include('scripts.ejs') %>
+</body>

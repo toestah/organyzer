@@ -1,0 +1,27 @@
+
+<form method="POST" action="/changeselection">
+    <select onchange="this.form.submit()" name="selection">
+
+        <% list.forEach((item) => { %>
+            <option <% if (selected === item) { %>
+                selected> <%= item %>
+            </option>
+            <% } else{ %>
+                > <%= item %> </option>
+            <% } %>
+        <% }) %>
+
+    </select>
+</form>
+
+
+<%= numEl %>
+
+
+
+<form>
+<% for(const [key,val] of Object.entries(schema)) { %>
+    <%= key %>: <%- val[0] %> <%- val[1] %> <br>
+<% } %>
+
+</form>

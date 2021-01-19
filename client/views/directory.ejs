@@ -1,0 +1,68 @@
+<head>
+    <%- include('bootstrap.ejs') %>
+</head>
+
+<body>
+    <%- include('navbar.ejs') %>
+    <div class="container">
+        <div class="row">
+            <table id="myTable" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <% for (key of Object.keys(records[0]._fields[0].properties)){ %>
+                            <% if (key != "Model"){ %>
+                            <th>
+                                <%=key%>
+                            </th>
+                            <% } %>
+                        <% } %>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% records.forEach((record)=> { %>
+                        <tr>
+                        <% for ([key,val] of Object.entries(record._fields[0].properties)){ %>
+                            <% if (key != "Model"){ %>
+                                <td>
+                                    <% if(key == "Jersey_Color") { %>
+                                        <div style='float:left;width:30px; height: 10px; background-color: <%= val %>; margin-right:10px'> </div> 
+                                        <div style="float:left">
+                                            <%=val%>
+                                        </div>
+                                    <% } else if (key === "Picture"){ %>
+
+                                        <img style="width:100px" src="<%= val%>" />
+
+                                    <% } else{ %>
+<div style="float:left">
+    <%=val%>
+</div>
+
+                                    <% } %>
+
+
+                                </td>
+                            <% } %>
+                        <% } %>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <%- include('scripts.ejs') %>
+    <script>
+        $(document).ready(function () {
+            $('#myTable').DataTable();
+        });
+
+    </script>
+
+    <style>
+
+        tr {
+            cursor: pointer;
+        }
+
+    </style>
+</body>

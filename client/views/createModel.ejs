@@ -1,0 +1,57 @@
+<head>
+    <%- include('bootstrap.ejs') %>
+</head>
+
+<body>
+    <%- include('navbar.ejs') %>
+        <div class="container">
+            <div class="row">
+                <h1>Welcome to the Model Schema Creation Page</h1>
+                <p>On this page, you will specify the constraints for a new Data Model Schema</p>
+            </div>
+            <div class="row">
+                <form method="POST" action="/createmodel/reload">
+                    Desired Number of Fields in Model: &nbsp; &nbsp;
+                    <select name="numEl" onchange="this.form.submit()">
+                        <% for(let i=1; i < 10; i++) { %>
+                            <option <% if(i==numEl){ %> selected <% } %> value="<%= i %>"><%= i %>
+                            </option>
+                            <% } %>
+                    </select>
+                </form>
+            </div>
+            <div class="row">
+                <form id="form2" method="POST" action="/createmodel/submit">
+                    <input type="hidden" name="numEl" value="<%= numEl %>" />
+                    Label: <input name="label" type="text"></input>
+                    <br> <br>
+                    <table class="table">
+                        <tr>
+                            <th>Field Name</th>
+                            <th>Field Data Type</th>
+                        </tr>
+                        <% for(let i=0; i < numEl; i++) { %>
+                            <tr>
+                                <td><input class="form-control" name="key_<%= i %>" type="text"></input></td>
+                                <td>
+                                    <select class="form-control" name="val_<%= i %>">
+                                        <option>Text</option>
+                                        <option>Number</option>
+                                        <option>Color</option>
+                                        <option>Date</option>
+                                        <option>Email</option>
+                                        <option>Image</option>
+                                        <option>Textarea</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <% } %>
+                    </table>
+                    <br>
+                    <br>
+                    <input type="submit" value="Submit" />
+                </form>
+            </div>
+        </div>
+        <%- include('scripts.ejs') %>
+</body>
