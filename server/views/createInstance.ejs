@@ -12,8 +12,8 @@
                     Selected Model: 
 
                     <select name="model" onchange="this.options[this.selectedIndex].value && (window.location = this.options[this.selectedIndex].value);">
-                        <% for ( val of record2) { %>
-                            <option value="/createinstance/<%=val._fields[0]%>" <% if (val._fields[0] == record.properties['Model']) { %>
+                        <% for ( val of models) { %>
+                            <option value="/createinstance/<%=val._fields[0]%>" <% if (val._fields[0] == activeModel) { %>
                                 selected <% } %>
                             ><%= val._fields[0] %></option>
                         <% } %>
@@ -23,11 +23,11 @@
                         <br>
                         <hr>
                         <form method="POST" action="/createinstance">
-                            <input type="hidden" name="Model" value="<%=record.properties['Model']%>" />
+                            <input type="hidden" name="Model" value="<%=fields.properties['Model']%>" />
                             <table class="table">
                                 <tbody>
-                                    <% for ([key,val] of Object.entries(record.properties)) { %>
-                                        <% if (key !='Model'){ %>
+                                    <% for ([key,val] of Object.entries(fields.properties)) { %>
+                                        <% if (key !='Model' && elementMap[val][0] == "input"){ %>
                                             <tr>
                                                 <td>
                                                     <%= key %>
@@ -37,6 +37,23 @@
                                                         + '" name="' + key + '">' %>
                                                 </td>
                                             </tr>
+                                        <% } %>
+
+                                        <% if (key !='Model' && elementMap[val][0] == "select") { %>
+                                            <tr>
+                                                <td>
+                                                    <%= key %> 
+                                                </td>
+                                                <td>
+                                                    <select name=<%=key%>>
+                                                        <% elementMap[val][1].forEach((el) => { %>
+                                                            <option><%= el %></option>
+                                                        <% }) %>
+                                                    </select>
+
+                                                </td>
+                                            </tr>
+
                                         <% } %>
                                     <% } %>
                                 </tbody>

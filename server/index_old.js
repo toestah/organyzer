@@ -17,6 +17,79 @@ var driver = neo4j.driver(
   neo4j.auth.basic('neo4j', 'gecko45Engine')
 );
 
+let elementMap = {
+  Text: ['input', 'text'],
+  Number: ['input', 'number'],
+  Textarea: ['textarea', ''],
+  Color: ['input', 'color'],
+  Date: ['input', 'date'],
+  Image: ['input', 'text'],
+  Email: ['input', 'email'],
+  Checkbox: ['input', 'checkbox'],
+};
+
+async function updateElementMap() {
+  elementMap = {
+    Text: ['input', 'text'],
+    Number: ['input', 'number'],
+    Textarea: ['textarea', ''],
+    Color: ['input', 'color'],
+    Date: ['input', 'date'],
+    Image: ['input', 'text'],
+    Email: ['input', 'email'],
+    Checkbox: ['input', 'checkbox'],
+  };
+
+  let models = [];
+  let options = [];
+
+  // First get a list of all the Models
+
+  const queryString = `match(s: Schema) return s.Model`;
+
+  runQuery(queryString)
+    .then((result) => {
+      result.records.forEach((record) => {
+        models.push(record._fields[0]); // populates models with list of all model names
+      });
+
+      models.forEach((model) => {
+        let queryString2 = `match(s: ${model}) return s.Name`;
+        //console.log(queryString2);
+        let options = [];
+
+        runQuery(queryString2).then((result2) => {
+          let records2 = result2.records;
+          records2.forEach((record) => {
+            options.push(record._fields[0]);
+          });
+          console.log(options);
+          console.log('innn ^');
+          elementMap[model] = ['select', options];
+        });
+      });
+    })
+    .finally(() => {
+      console.log(elementMap);
+    });
+
+  // Iterate through those Models
+
+  // Get a list of all names of instances of the currently iterated Model
+
+  // Generate an array with those names
+
+  // Next, create the ['select', [namesarray]] variable
+
+  // Next, push that variable to the elementMap (key is the currently iterated Model)
+
+  // Finally, return
+
+  //runQuery();
+
+  //elementMap[key] = val;
+}
+
 // Basic function to run a cypher query on the database
 async function runQuery(queryString) {
   const neo4jsession = driver.session();
@@ -31,45 +104,9 @@ async function runQuery(queryString) {
   }
 }
 
-function getElementMap() {
-  // A Dictionary for html input and respective select options
-
-  queryString = `match(s: Schema) return s.Model`;
-
-  runQuery(queryString).then((result) => {
-    const records = result.records;
-    let elementMap = {
-      Text: ['input', 'text'],
-      Number: ['input', 'number'],
-      Textarea: ['textarea', ''],
-      Color: ['input', 'color'],
-      Date: ['input', 'date'],
-      Image: ['input', 'text'],
-      Email: ['input', 'email'],
-      Checkbox: ['input', 'checkbox'],
-    };
-
-    records.forEach((record) => {
-      //console.log(record._fields[0]);
-      //elementMap[record._fields[0]] = ['select', ''];
-      const newKey = record._fields[0];
-      //console.log(newKey);
-      elementMap[record._fields[0]] = ['select', ''];
-
-      //Object.assign(elementMap, { weight: '125' });
-
-      //elementMap = { [newKey]: 'John' };
-
-      //Object.assign(elementMap, {record._fields[0] : '["select",""]' });
-      //console.log(elementMap['Athlete']);
-    });
-    console.log(elementMap);
-    return elementMap;
-  });
-}
-
 // API Routes
 app.get('/', (req, res) => {
+  updateElementMap();
   res.render('index');
 });
 
@@ -118,7 +155,6 @@ app.get('/directory_plain', (req, res) => {
 app.post('/rawdata', (req, res) => {
   const query = req.body.query;
   runQuery(query).then((result) => {
-    console.log(result);
     res.send(result);
     //res.render('index', { records: result.records });
   });
@@ -127,8 +163,6 @@ app.post('/rawdata', (req, res) => {
 app.post('/', (req, res) => {
   const query = req.body.query;
   runQuery(query).then((result) => {
-    console.log(result);
-    //res.send(result);
     res.render('index', { records: result.records });
   });
 });
@@ -159,40 +193,22 @@ app.post('/create', (req, res) => {
     .catch((err) => console.log(err));
 });
 
-app.post('/create', (req, res) => {
-  //will build the create query to create the node within the database
-  let queryString = `create(p:${req.body.label} {`;
-  for (key in req.body) {
-    if (key != 'label')
-      queryString = queryString.concat(`${key}:"${req.body[key]}",`);
-  }
-  queryString = queryString.slice(0, -1);
-  queryString = queryString.concat('})');
-
-  let session = driver.session();
-
-  session
-    .run(queryString)
-    .then(function () {
-      res.redirect('/');
-      session.close();
-    })
-    .catch((err) => console.log(err));
-});
-
 //--------------INSTANCE CREATION ROUTES
 
-app.get('/createinstance/:label', (req, res) => {
-  const label = req.params.label;
-  const queryString = `match(p:Schema {Model: '${label}'}) return p`;
-  const queryString2 = `match(s: Schema) return s.Model`;
+app.get('/createinstance/:model', async (req, res) => {
+  await updateElementMap();
+  let model = req.params.model;
+  const queryString = `match(p:Schema {Model: '${model}'}) return p`; //returns schema for that Model
+  const queryString2 = `match(s: Schema) return s.Model`; //returns list of all Models
   runQuery(queryString).then((result) => {
     runQuery(queryString2).then((result2) => {
-      console.log(result2.records);
+      fields = result.records;
+      models = result2.records;
       res.render('createInstance', {
-        record: result.records[0]._fields[0],
-        record2: result2.records,
-        elementMap: getElementMap(),
+        fields: fields[0]._fields[0],
+        activeModel: model,
+        models: models,
+        elementMap: elementMap,
       });
     });
   });
@@ -208,8 +224,8 @@ app.post('/createinstance', (req, res) => {
   queryString = queryString.concat('}) return p');
 
   runQuery(queryString).then((result) => {
-    console.log(queryString);
-    console.log(result);
+    //console.log(queryString);
+    //console.log(result);
     res.redirect(`./directory/${req.body.Model}`);
     // res.render('createInstance', {
     //   record: result.records[0]._fields[0],
@@ -229,6 +245,8 @@ app.get('/viewmodels', (req, res) => {
 
   //res.render('viewModels');
 });
+
+//----------DELETE -------
 
 app.get('/deletemodel/:label', (req, res) => {
   let queryString = `match(s: Schema {Model: "${req.params.label}"}) detach delete s;`;
@@ -279,17 +297,156 @@ app.post('/createmodel/submit', (req, res) => {
   queryString = queryString.concat('})');
 
   runQuery(queryString).then((result) => {
-    console.log(result);
+    //console.log(result);
     res.redirect('/createinstance/' + req.body.label);
   });
-});
-
-app.post('/changeselection', (req, res) => {
-  const selection = req.body.selection;
-  console.log(selection);
-  res.redirect(`/create/${selection}`);
 });
 
 app.listen(5500);
 
 module.exports = app;
+
+//--------- DEPRECATED BELOW
+
+// app.post('/changeselection', (req, res) => {
+//   const selection = req.body.selection;
+//   console.log(selection);
+//   res.redirect(`/create/${selection}`);
+// });
+
+// app.get('/createinstance/:label', (req, res) => {
+//   //-------------Definitions -------------
+
+//   const label = req.params.label;
+
+//   const queryString = `match(p:Schema {Model: '${label}'}) return p`; //returns all instances belonging to that Model
+//   const queryString2 = `match(s: Schema) return s.Model`; //returns list of all Models
+
+//   let elementMap = {
+//     Text: ['input', 'text'],
+//     Number: ['input', 'number'],
+//     Textarea: ['textarea', ''],
+//     Color: ['input', 'color'],
+//     Date: ['input', 'date'],
+//     Image: ['input', 'text'],
+//     Email: ['input', 'email'],
+//     Checkbox: ['input', 'checkbox'],
+//   };
+
+//   runQuery(queryString).then((result) => {
+//     runQuery(queryString2).then((result2) => {
+//       let models = [];
+//       result2.records.forEach((record) => {
+//         models.push(record._fields[0]);
+//       });
+//       //console.log(models);
+
+//       models.forEach((model) => {
+//         const queryString3 = `match(p: ${model}) return p.Name`; //returns names of all instances belonging to that Model
+
+//         runQuery(queryString3).then((result3) => {
+//           let names = []; //These are names of all Instances of the given Model
+//           result3.records.forEach((record) => {
+//             //elementMap[model] = ['select', ''];
+//             names.push(record._fields[0]);
+//           });
+//           console.log(names);
+//         });
+//       });
+
+//       console.log(elementMap);
+//       res.send('ok');
+//     });
+//   });
+// });
+
+// app.get('/createinstance/:label', (req, res) => {
+//   const label = req.params.label;
+
+//   const queryString = `match(p:Schema {Model: '${label}'}) return p`; //returns all instances belonging to that Model
+//   const queryString2 = `match(s: Schema) return s.Model`; //returns list of all Models
+
+//   //need a list of names for a given Model
+
+//   let elementMap = {
+//     Text: ['input', 'text'],
+//     Number: ['input', 'number'],
+//     Textarea: ['textarea', ''],
+//     Color: ['input', 'color'],
+//     Date: ['input', 'date'],
+//     Image: ['input', 'text'],
+//     Email: ['input', 'email'],
+//     Checkbox: ['input', 'checkbox'],
+//   };
+
+//   runQuery(queryString).then((result) => {
+//     runQuery(queryString2).then((result2) => {
+//       let models = [];
+//       result2.records.forEach((record) => {
+//         models.push(record._fields[0]);
+//       });
+//       console.log(models);
+
+//       models.forEach((model) => {
+//         const queryString3 = `match(p:${model}) return p.Name`; //returns names of all instances belonging to that Model
+//         runQuery(queryString3).then((result3) => {
+//         let names = []; //These are names of all Instances of the given Model
+//         result3.records.forEach((record) => {
+//           names.push(record._fields[0]);
+
+//         });
+//       });
+
+//     })
+
+//       // runQuery(queryString3).then((result3) => {
+//       //   let names = []; //These are names of all Instances of the given Model
+//       //   result3.records.forEach((record) => {
+//       //     names.push(record._fields[0]);
+//       //     elementMap[]
+//       //   });
+
+//       //   // names.forEach((name) => {
+//       //   //   elementMap;
+//       //   // });
+
+//       //   console.log(names);
+
+//       //   res.render('createInstance', {
+//       //     record: result.records[0]._fields[0],
+//       //     record2: result2.records,
+//       //     elementMap: elementMap,
+//       //   });
+//       // });
+//   //   });
+//   // });
+
+//   // runQuery(queryString).then((instances) => {
+//   //   runQuery(queryString2).then((models) => {
+//   //     runQuery(queryString3).then((result3) => {
+//   //       const records3 = result3.records;
+//   //       let elementMap = {
+//   //         Text: ['input', 'text'],
+//   //         Number: ['input', 'number'],
+//   //         Textarea: ['textarea', ''],
+//   //         Color: ['input', 'color'],
+//   //         Date: ['input', 'date'],
+//   //         Image: ['input', 'text'],
+//   //         Email: ['input', 'email'],
+//   //         Checkbox: ['input', 'checkbox'],
+//   //       };
+
+//   //       records3.forEach((record) => {
+//   //         const newKey = record._fields[0];
+//   //         elementMap[record._fields[0]] = ['select', ''];
+//   //       });
+
+//   //       res.render('createInstance', {
+//   //         record: result.records[0]._fields[0],
+//   //         record2: result2.records,
+//   //         elementMap: elementMap,
+//   //       });
+//   //     });
+//   //   });
+//   // });
+// // });
