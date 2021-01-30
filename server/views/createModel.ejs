@@ -31,7 +31,7 @@
                             <th>Field Data Type</th>
                         </tr>
                         <% for(let i=0; i < numEl; i++) { %>
-                            <tr>
+                            <tr id="tbl_row_<%= i %>">
                                 <td><input class="form-control" name="key_<%= i %>" type="text"></input></td>
                                 <td>
                                     <select class="form-control" name="val_<%= i %>">
@@ -42,6 +42,9 @@
                                         <option>Email</option>
                                         <option>Image</option>
                                         <option>Textarea</option>
+                                        <% for ( val of record2) { %>
+                                            <option> <%= val._fields[0] %> </option>
+                                        <% } %>
                                     </select>
                                 </td>
                             </tr>

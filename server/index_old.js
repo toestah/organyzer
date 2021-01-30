@@ -3,20 +3,7 @@ const logger = require('morgan');
 const path = require('path');
 const neo4j = require('neo4j-driver');
 
-const xal = require('./add.js');
-
 const app = express();
-
-const elementMap = {
-  Text: ['input', 'text'],
-  Number: ['input', 'number'],
-  Textarea: ['textarea', ''],
-  Color: ['input', 'color'],
-  Date: ['input', 'date'],
-  Image: ['input', 'text'],
-  Email: ['input', 'email'],
-  Checkbox: ['input', 'checkbox'],
-};
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -30,10 +17,10 @@ var driver = neo4j.driver(
   neo4j.auth.basic('neo4j', 'gecko45Engine')
 );
 
+// Basic function to run a cypher query on the database
 async function runQuery(queryString) {
   const neo4jsession = driver.session();
   let result;
-
   try {
     result = await neo4jsession.writeTransaction((tx) => tx.run(queryString));
   } catch (err) {
@@ -44,6 +31,44 @@ async function runQuery(queryString) {
   }
 }
 
+function getElementMap() {
+  // A Dictionary for html input and respective select options
+
+  queryString = `match(s: Schema) return s.Model`;
+
+  runQuery(queryString).then((result) => {
+    const records = result.records;
+    let elementMap = {
+      Text: ['input', 'text'],
+      Number: ['input', 'number'],
+      Textarea: ['textarea', ''],
+      Color: ['input', 'color'],
+      Date: ['input', 'date'],
+      Image: ['input', 'text'],
+      Email: ['input', 'email'],
+      Checkbox: ['input', 'checkbox'],
+    };
+
+    records.forEach((record) => {
+      //console.log(record._fields[0]);
+      //elementMap[record._fields[0]] = ['select', ''];
+      const newKey = record._fields[0];
+      //console.log(newKey);
+      elementMap[record._fields[0]] = ['select', ''];
+
+      //Object.assign(elementMap, { weight: '125' });
+
+      //elementMap = { [newKey]: 'John' };
+
+      //Object.assign(elementMap, {record._fields[0] : '["select",""]' });
+      //console.log(elementMap['Athlete']);
+    });
+    console.log(elementMap);
+    return elementMap;
+  });
+}
+
+// API Routes
 app.get('/', (req, res) => {
   res.render('index');
 });
@@ -51,10 +76,14 @@ app.get('/', (req, res) => {
 app.get('/directory', (req, res) => {
   const model = req.params.model;
   const queryString = `match(p) return p`;
+  const queryString2 = `match(s: Schema) return s.Model`;
 
   runQuery(queryString).then((result) => {
-    res.render('directory', {
-      records: result.records,
+    runQuery(queryString2).then((result2) => {
+      res.render('directory', {
+        records: result.records,
+        record2: result2.records,
+      });
     });
   });
 });
@@ -62,10 +91,15 @@ app.get('/directory', (req, res) => {
 app.get('/directory/:model', (req, res) => {
   const model = req.params.model;
   const queryString = `match(p:${model}) return p`;
+  const queryString2 = `match(s: Schema) return s.Model`;
 
   runQuery(queryString).then((result) => {
-    res.render('directory', {
-      records: result.records,
+    runQuery(queryString2).then((result2) => {
+      res.render('directory', {
+        record: result.records,
+        record2: result2.records,
+        model: req.params.model,
+      });
     });
   });
 });
@@ -146,36 +180,20 @@ app.post('/create', (req, res) => {
     .catch((err) => console.log(err));
 });
 
-// app.get('/createModel/:model', (req, res) => {
-//   const list = ['Person', 'Company', 'Project', 'Contract'];
-//   const selected = req.params.model;
-
-//   const schema = {
-//     Name: ['<input type="text" name="name">', '</input>'],
-//     Address: ['<textarea name="address">', '</textarea>'],
-//     Employees: ['<input type="number" name="employees">', '</input>'],
-//   };
-
-//   res.render('createInstance', {
-//     list: list,
-//     selected: selected,
-//     schema: schema,
-//     numEl: 1,
-//   });
-// });
-
 //--------------INSTANCE CREATION ROUTES
 
 app.get('/createinstance/:label', (req, res) => {
   const label = req.params.label;
   const queryString = `match(p:Schema {Model: '${label}'}) return p`;
-
+  const queryString2 = `match(s: Schema) return s.Model`;
   runQuery(queryString).then((result) => {
-    console.log(result);
-    //res.send(result);
-    res.render('createInstance', {
-      record: result.records[0]._fields[0],
-      elementMap: elementMap,
+    runQuery(queryString2).then((result2) => {
+      console.log(result2.records);
+      res.render('createInstance', {
+        record: result.records[0]._fields[0],
+        record2: result2.records,
+        elementMap: getElementMap(),
+      });
     });
   });
 });
@@ -192,7 +210,7 @@ app.post('/createinstance', (req, res) => {
   runQuery(queryString).then((result) => {
     console.log(queryString);
     console.log(result);
-    res.redirect(`./directory/Athlete}`);
+    res.redirect(`./directory/${req.body.Model}`);
     // res.render('createInstance', {
     //   record: result.records[0]._fields[0],
     //   elementMap: elementMap,
@@ -200,10 +218,44 @@ app.post('/createinstance', (req, res) => {
   });
 });
 
+//------------- View Models
+
+app.get('/viewmodels', (req, res) => {
+  let queryString = `match(s: Schema) return s.Model`;
+
+  runQuery(queryString).then((result) => {
+    res.render('viewModels', { models: result.records });
+  });
+
+  //res.render('viewModels');
+});
+
+app.get('/deletemodel/:label', (req, res) => {
+  let queryString = `match(s: Schema {Model: "${req.params.label}"}) detach delete s;`;
+
+  runQuery(queryString).then((result) => {
+    res.redirect('/viewmodels');
+  });
+});
+
+app.get('/deleteinstance/:instance/:name', (req, res) => {
+  let queryString = `match(s: ${req.params.instance} {Name: "${req.params.name}"}) detach delete s;`;
+
+  runQuery(queryString).then(() => {
+    res.redirect(`/directory/${req.params.instance}`);
+  });
+});
+
 //---------------MODEL CREATION ROUTES
 
 app.get('/createmodel/:numEl', (req, res) => {
-  res.render('createModel', { numEl: req.params.numEl });
+  const queryString2 = `match(s: Schema) return s.Model`;
+  runQuery(queryString2).then((result2) => {
+    res.render('createModel', {
+      numEl: req.params.numEl,
+      record2: result2.records,
+    });
+  });
 });
 
 app.post('/createmodel/reload', (req, res) => {
@@ -228,7 +280,7 @@ app.post('/createmodel/submit', (req, res) => {
 
   runQuery(queryString).then((result) => {
     console.log(result);
-    res.redirect('1');
+    res.redirect('/createinstance/' + req.body.label);
   });
 });
 

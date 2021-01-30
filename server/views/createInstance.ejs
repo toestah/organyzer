@@ -4,12 +4,22 @@
 </head>
 
 <body>
-    <%- include('navbar.ejs') %>
+    <%- include('navbar.ejs') %> 
         <div class="container">
             <div class="row">
                     <h1>Create a Model Instance</h1>
                     <br>
-                    Selected Model: <%= record.properties["Model"] %>
+                    Selected Model: 
+
+                    <select name="model" onchange="this.options[this.selectedIndex].value && (window.location = this.options[this.selectedIndex].value);">
+                        <% for ( val of record2) { %>
+                            <option value="/createinstance/<%=val._fields[0]%>" <% if (val._fields[0] == record.properties['Model']) { %>
+                                selected <% } %>
+                            ><%= val._fields[0] %></option>
+                        <% } %>
+                        
+                    </select>
+
                         <br>
                         <hr>
                         <form method="POST" action="/createinstance">
@@ -17,7 +27,7 @@
                             <table class="table">
                                 <tbody>
                                     <% for ([key,val] of Object.entries(record.properties)) { %>
-                                        <% if (key !='Model' ){ %>
+                                        <% if (key !='Model'){ %>
                                             <tr>
                                                 <td>
                                                     <%= key %>
@@ -27,7 +37,8 @@
                                                         + '" name="' + key + '">' %>
                                                 </td>
                                             </tr>
-                                            <% }} %>
+                                        <% } %>
+                                    <% } %>
                                 </tbody>
                             </table>
                             <input type="submit" value="Submit" />
